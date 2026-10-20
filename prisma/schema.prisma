@@ -1,0 +1,221 @@
+// Prisma schema for InternDoor Full-Stack Recreation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String?
+  role         String    @default("CANDIDATE") // CANDIDATE, RECRUITER, ADMIN
+  avatarUrl    String?
+  headline     String?
+  location     String?
+  githubUrl    String?
+  linkedinUrl  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  savedJobs        SavedJob[]
+  applications     Application[]
+  resumes          Resume[]
+  jobAlerts        JobAlert[]
+  notifications    Notification[]
+  practiceAttempts PracticeAttempt[]
+}
+
+model Company {
+  id           String      @id @default(cuid())
+  name         String      @unique
+  slug         String      @unique
+  logoUrl      String?
+  website      String?
+  industry     String?
+  headquarters String?
+  description  String?
+  isVerified   Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  jobs       Job[]
+  jobSources JobSource[]
+}
+
+model Job {
+  id              String    @id @default(cuid())
+  title           String
+  slug            String
+  companyId       String
+  location        String
+  workplaceType   String    @default("ONSITE") // REMOTE, HYBRID, ONSITE
+  jobType         String    @default("INTERNSHIP") // INTERNSHIP, FULL_TIME, CO_OP
+  experienceLevel String    @default("ENTRY_LEVEL") // INTERN, ENTRY_LEVEL, ASSOCIATE, MID_SENIOR
+  salaryMin       Float?
+  salaryMax       Float?
+  salaryCurrency  String    @default("USD")
+  stipendRate     String?
+  description     String
+  requirements    String?
+  skills          String    // Comma-separated or JSON string
+  applyUrl        String
+  source          String    @default("direct") // greenhouse, lever, employer_direct, scraped
+  externalId      String?
+  dedupHash       String    @unique
+  isExpired       Boolean   @default(false)
+  postedAt        DateTime  @default(now())
+  discoveredAt    DateTime  @default(now())
+  lastVerifiedAt  DateTime  @default(now())
+  clicksCount     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  savedJobs    SavedJob[]
+  applications Application[]
+
+  @@index([jobType])
+  @@index([workplaceType])
+  @@index([location])
+  @@index([postedAt])
+  @@index([companyId])
+}
+
+model JobSource {
+  id           String         @id @default(cuid())
+  companyId    String
+  sourceType   String         // GREENHOUSE, LEVER, WORKDAY, CUSTOM_RSS
+  endpointUrl  String
+  companySlug  String
+  isActive     Boolean        @default(true)
+  lastSyncAt   DateTime?
+  errorCount   Int            @default(0)
+  createdAt    DateTime       @default(now())
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ingestionLogs IngestionLog[]
+}
+
+model SavedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model Application {
+  id             String    @id @default(cuid())
+  userId         String
+  jobId          String
+  status         String    @default("SAVED") // SAVED, APPLIED, ASSESSMENT, INTERVIEW, OFFER, REJECTED, WITHDRAWN
+  appliedDate    DateTime?
+  notes          String?
+  salaryOffer    Float?
+  followUpDate   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model Resume {
+  id           String   @id @default(cuid())
+  userId       String
+  fileName     String
+  fileUrl      String?
+  rawText      String
+  parsedSkills String?  // JSON string
+  targetRole   String?
+  isPrimary    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model JobAlert {
+  id            String   @id @default(cuid())
+  userId        String
+  keywords      String?
+  jobType       String?
+  workplaceType String?
+  location      String?
+  frequency     String   @default("DAILY") // INSTANT, DAILY, WEEKLY
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PracticeQuestion {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  category       String   // Data Structures, Algorithms, Frontend, Backend, System Design, SQL
+  difficulty     String   // EASY, MEDIUM, HARD
+  description    String
+  starterCode    String?
+  solution       String?
+  acceptanceRate Float    @default(75.0)
+  points         Int      @default(10)
+  createdAt      DateTime @default(now())
+
+  attempts PracticeAttempt[]
+}
+
+model PracticeAttempt {
+  id            String    @id @default(cuid())
+  userId        String
+  questionId    String
+  status        String    @default("ATTEMPTED") // ATTEMPTED, SOLVED
+  submittedCode String?
+  pointsEarned  Int       @default(0)
+  solvedAt      DateTime?
+  createdAt     DateTime  @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+}
+
+model IngestionLog {
+  id             String     @id @default(cuid())
+  sourceId       String?
+  sourceName     String
+  status         String     // SUCCESS, PARTIAL_SUCCESS, FAILED
+  jobsDiscovered Int        @default(0)
+  jobsInserted   Int        @default(0)
+  jobsUpdated    Int        @default(0)
+  durationMs     Int        @default(0)
+  errorMessage   String?
+  executedAt     DateTime   @default(now())
+
+  jobSource JobSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+}
