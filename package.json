@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "seed": "npx tsx scripts/seed.ts",
     "ingest": "npx tsx scripts/ingest.ts",
     "import:sheet": "npx tsx scripts/import-sheet-jobs.ts"
@@ -16,7 +17,7 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "jose": "^6.2.12",
-    "lucide-react": "^1.59.0",
+    "lucide-react": "^1.60.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
