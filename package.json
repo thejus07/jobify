@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "seed": "npx tsx scripts/seed.ts",
-    "ingest": "npx tsx scripts/ingest.ts",
-    "import:sheet": "npx tsx scripts/import-sheet-jobs.ts"
+    "seed": "npx tsx --env-file=.env scripts/seed.ts",
+    "ingest": "npx tsx --env-file=.env scripts/ingest.ts",
+    "import:sheet": "npx tsx --env-file=.env scripts/import-sheet-jobs.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
