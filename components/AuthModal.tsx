@@ -38,7 +38,6 @@ export default function AuthModal({
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [otpStep, setOtpStep] = useState(false); // false = info step, true = OTP entry step
-  const [unconfiguredNotice, setUnconfiguredNotice] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
 
   const [loading, setLoading] = useState(false);
@@ -139,7 +138,6 @@ export default function AuthModal({
 
       // Successfully sent OTP -> transition to Step 2
       setOtpStep(true);
-      setUnconfiguredNotice(data.devOtp || null);
       setResendTimer(30);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send verification code");
@@ -204,8 +202,6 @@ export default function AuthModal({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend verification code");
-
-      setUnconfiguredNotice(data.devOtp || null);
       setResendTimer(30);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to resend code");
@@ -291,26 +287,6 @@ export default function AuthModal({
               </p>
             </div>
 
-            {unconfiguredNotice && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3 text-center">
-                <p className="text-[11px] font-medium text-amber-700">
-                  SMTP credentials not yet entered in .env
-                </p>
-                <div className="mt-1 flex items-center justify-center gap-2">
-                  <span className="text-[11px] text-[#86868b]">Active code:</span>
-                  <span className="text-sm font-bold tracking-widest font-mono text-[#1d1d1f]">
-                    {unconfiguredNotice}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setOtp(unconfiguredNotice)}
-                    className="text-[10px] text-[#0071e3] font-medium underline"
-                  >
-                    Auto-fill
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="block text-[11px] font-medium text-[#86868b] mb-1.5 text-center">

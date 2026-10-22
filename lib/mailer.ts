@@ -327,8 +327,8 @@ export async function sendOtpEmail(params: SendOtpEmailParams): Promise<MailerRe
   console.log(`==================================================\n`);
 
   return {
-    success: true,
+    success: process.env.NODE_ENV !== "production",
     provider: "simulation",
-    error: "SMTP credentials not configured in .env",
+    error: "SMTP credentials not configured in environment",
   };
 }

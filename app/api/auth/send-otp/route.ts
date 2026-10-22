@@ -46,15 +46,28 @@ export async function POST(req: NextRequest) {
 
     const isLiveDelivery = mailResult.success && mailResult.provider !== "simulation";
 
+    if (!mailResult.success) {
+      return NextResponse.json(
+        { error: mailResult.error || "Failed to dispatch verification email. Please check your email address or try again." },
+        { status: 500 }
+      );
+    }
+
+    if (!isLiveDelivery) {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Email delivery service not configured. Please add SMTP credentials in server settings." },
+          { status: 503 }
+        );
+      }
+      console.log(`\n🔑 [LOCAL DEV OTP for ${cleanEmail}]: ${otp}\n`);
+    }
+
     return NextResponse.json({
       success: true,
-      message: isLiveDelivery
-        ? `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your inbox and spam folder.`
-        : `Email delivery simulation: SMTP not configured in .env yet.`,
+      message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your inbox and spam folder.`,
       companyDomain: validation.domain,
       mailDelivered: isLiveDelivery,
-      provider: mailResult.provider,
-      devOtp: !isLiveDelivery ? otp : undefined,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to dispatch verification code";
