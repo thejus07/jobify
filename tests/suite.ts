@@ -1,5 +1,3 @@
-import prisma from "../lib/prisma";
-
 const BASE_URL = "http://localhost:3000";
 
 interface TestReport {
@@ -95,6 +93,7 @@ async function runAll() {
         name: "Test Runner",
         email: uniqueEmail,
         password: "SecurePassword123!",
+        otp: "999999",
       }),
     });
 
@@ -144,7 +143,7 @@ async function runAll() {
     const hasJob = listData.savedJobs?.some((s: any) => s.job.id === testJobId);
     if (!hasJob) throw new Error("Saved job not found in saved jobs list");
 
-    return `Successfully bookmarked job ${testJobId} and persisted in SQLite DB`;
+    return `Successfully bookmarked job ${testJobId} and persisted in PostgreSQL DB`;
   });
 
   // TEST 7: Update application status
@@ -251,14 +250,19 @@ EXPERIENCE: Full Stack Intern at Tech Corp. Developed REST APIs and microservice
 
   // TEST 11: Verify duplicate prevention
   await runTest("TEST-11", "Deduplication & Hash Collision Prevention", async () => {
-    const beforeCount = await prisma.job.count();
+    const beforeRes = await fetch(`${BASE_URL}/api/jobs?limit=1`);
+    const beforeData = await beforeRes.json();
+    const beforeCount = beforeData.pagination.total;
 
     // Re-run ingestion immediately
     const res = await fetch(`${BASE_URL}/api/admin/ingest?key=interndoor_cron_secret_789456`, {
       method: "POST",
     });
     const data = await res.json();
-    const afterCount = await prisma.job.count();
+
+    const afterRes = await fetch(`${BASE_URL}/api/jobs?limit=1`);
+    const afterData = await afterRes.json();
+    const afterCount = afterData.pagination.total;
 
     const totalInsertedOnRerun = data.results.reduce((acc: number, r: any) => acc + (r.inserted || 0), 0);
     if (totalInsertedOnRerun > 0 || afterCount !== beforeCount) {
@@ -347,10 +351,10 @@ EXPERIENCE: Full Stack Intern at Tech Corp. Developed REST APIs and microservice
 }
 
 runAll()
+  .then(() => {
+    process.exit(0);
+  })
   .catch((e) => {
     console.error("Test execution fatal error:", e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
